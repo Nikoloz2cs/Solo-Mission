@@ -8,38 +8,41 @@
 import UIKit
 import SpriteKit
 import GameplayKit
+import AVFoundation //for audio
 
 class GameViewController: UIViewController {
 
+    var backingAudio = AVAudioPlayer()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Load 'GameScene.sks' as a GKScene. This provides gameplay related content
-        // including entities and graphs.
-        if let scene = GKScene(fileNamed: "GameScene") {
-            
-            // Get the SKScene from the loaded GKScene
-            if let sceneNode = scene.rootNode as! GameScene? {
-                
-                // Copy gameplay related content over to the scene
-                sceneNode.entities = scene.entities
-                sceneNode.graphs = scene.graphs
-                
-                // Set the scale mode to scale to fit the window
-                sceneNode.scaleMode = .aspectFill
-                
-                // Present the scene
-                if let view = self.view as! SKView? {
-                    view.presentScene(sceneNode)
-                    
-                    view.ignoresSiblingOrder = true
-                    
-                    view.showsFPS = true
-                    view.showsNodeCount = true
-                }
-            }
-        }
-    }
+        let filePath = Bundle.main.path(forResource: "the-art-of-synths(space song3)", ofType: "mp3")
+        let audioNSURL = NSURL(fileURLWithPath: filePath!)
+        
+        do { backingAudio = try AVAudioPlayer(contentsOf: audioNSURL as URL) }
+        catch { return print("Cannot Find The Background Audio") }
+        
+        backingAudio.numberOfLoops = -1
+        backingAudio.play()
+        
+        if let view = self.view as! SKView? {
+             // Load the SKScene from 'GameScene.sks'
+             let scene = MainMenuScene(size: CGSize(width: 1535, height: 2048))
+             // Set the scale mode to scale to fit the window
+             scene.scaleMode = .aspectFill
+             
+             // Present the scene
+             view.presentScene(scene)
+             
+             
+             view.ignoresSiblingOrder = true
+             
+             view.showsFPS = false
+             view.showsNodeCount = false
+         }
+     }
+
 
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         if UIDevice.current.userInterfaceIdiom == .phone {
@@ -53,3 +56,4 @@ class GameViewController: UIViewController {
         return true
     }
 }
+
