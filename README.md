@@ -33,6 +33,7 @@
     </td>
     <td>
       <p>Download the gameplay file from this repo to watch a short gameplay video.</p>
+       <p> (Click image to download) </p>
       <h2>How to Play</h2>
       <ul>
         <li><strong>Move Your Ship:</strong> Use touch controls to navigate your ship left and right.</li>
