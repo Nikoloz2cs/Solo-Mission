@@ -22,16 +22,28 @@
    - Select your target device or simulator.
    - Click the `Run` button or press `Command + R`.
 
-## How to Play
-
-- **Move Your Ship**: Use touch controls to navigate your ship left and right.
-- **Shoot**: Tap the screen to fire at incoming enemies.
-- **Avoid Collisions**: Don't let enemy ships collide with your ship.
-- **Destroy Enemies**: Shoot down enemy ships before they pass through your defenses.
 ## Gameplay
-Download the gameplay file from this repo to watch a short gameplay video [![Watch the video](solo_mission_gameplay_thumbnail.png)](https://github.com/Nikoloz2cs/Solo-Mission/raw/main/Solo_Mission_Gameplay.mov)
 
-Happy gaming! 🚀
+<table>
+  <tr>
+    <td>
+      <a href="https://github.com/Nikoloz2cs/Solo-Mission/raw/main/Solo_Mission_Gameplay.mov">
+        <img src="solo_mission_gameplay_thumbnail.png" alt="Watch the video" width="200"/>
+      </a>
+    </td>
+    <td>
+      <p>Download the gameplay file from this repo to watch a short gameplay video.</p>
+      <h2>How to Play</h2>
+      <ul>
+        <li><strong>Move Your Ship:</strong> Use touch controls to navigate your ship left and right.</li>
+        <li><strong>Shoot:</strong> Tap the screen to fire at incoming enemies.</li>
+        <li><strong>Avoid Collisions:</strong> Don't let enemy ships collide with your ship.</li>
+        <li><strong>Destroy Enemies:</strong> Shoot down enemy ships before they pass through your defenses.</li>
+      </ul>
+      <p>Happy gaming! 🚀</p>
+    </td>
+  </tr>
+</table>
 
 ## Credits
 The first couple commits of this project was made following the youtube series guide from [Matt Heaney Apps](https://www.youtube.com/@MattHeaneyApps). 
