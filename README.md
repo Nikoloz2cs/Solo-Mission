@@ -28,6 +28,8 @@
 - **Shoot**: Tap the screen to fire at incoming enemies.
 - **Avoid Collisions**: Don't let enemy ships collide with your ship.
 - **Destroy Enemies**: Shoot down enemy ships before they pass through your defenses.
+## Gameplay
+Download the gameplay file from this repo to watch a short gameplay video [![Watch the video](solo_mission_gameplay_thumbnail.png)](https://github.com/Nikoloz2cs/Solo-Mission/raw/main/Solo_Mission_Gameplay.mov)
 
 Happy gaming! 🚀
 
