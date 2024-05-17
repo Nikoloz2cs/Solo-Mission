@@ -17,7 +17,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var levelNumber = 0
     var livesNumber = 3
-    let livesLabel = SKLabelNode(fontNamed: "The Bold Font")
+    var heartNodes: [SKSpriteNode] = []
+    //let livesLabel = SKLabelNode(fontNamed: "The Bold Font")
     
     let player = SKSpriteNode(imageNamed: "playerShip")
     let bulletSound = SKAction.playSoundFileNamed("laserBulletSoundEffect", waitForCompletion: false)
@@ -43,6 +44,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func random(min: CGFloat, max: CGFloat) -> CGFloat {
         return CGFloat.random(in: min...max)
+    }
+    
+    func createHearts() {
+        // Remove any existing heart nodes
+        for heart in heartNodes {
+            heart.removeFromParent()
+        }
+        heartNodes.removeAll()
+        
+        // Create new heart nodes
+        for i in 0..<livesNumber {
+            let heart = SKSpriteNode(imageNamed: "heart")
+            heart.setScale(0.7)
+            heart.position = CGPoint(x: self.size.width * 0.7 + CGFloat(i * 40), y: self.size.height * 1.1)
+            heart.zPosition = 99
+            heartNodes.append(heart)
+            self.addChild(heart)
+        }
     }
     
     
@@ -98,23 +117,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         scoreLabel.text = "Score: 0"
         scoreLabel.fontSize = 70
-        scoreLabel.fontColor = SKColor.white
+        scoreLabel.fontColor = SKColor.systemYellow
         scoreLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.left
         scoreLabel.position = CGPoint(x: self.size.width * 0.22, y: self.size.height + scoreLabel.frame.size.height)
         scoreLabel.zPosition = 99
         self.addChild(scoreLabel)
-        
-        livesLabel.text = "Lives: 3"
-        livesLabel.fontSize = 70
-        livesLabel.fontColor = SKColor.white
-        livesLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.right
-        livesLabel.position = CGPoint(x: self.size.width * 0.78, y: self.size.height + livesLabel.frame.size.height)
-        livesLabel.zPosition = 99
-        self.addChild(livesLabel)
+    
+        createHearts()
         
         let moveOntoScreen = SKAction.moveTo(y: self.size.height * 0.9, duration: 0.3)
         scoreLabel.run(moveOntoScreen)
-        livesLabel.run(moveOntoScreen)
+        
+        for heart in heartNodes {
+            heart.run(moveOntoScreen)
+        }
         
         tapToStartLabel.text = "Tap To Begin"
         tapToStartLabel.fontSize = 100
@@ -172,23 +188,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     func loseALife() {
-        livesNumber -= 1
-        livesLabel.text = "Lives \(livesNumber)"
+        // Ensure there are lives to lose
+        if livesNumber > 0 {
+            livesNumber -= 1
+            
+            // Animate the first heart before removing it
+            let firstHeart = heartNodes[0]
+            let scaleUp = SKAction.scale(to: 1.5, duration: 0.2)
+            let scaleDown = SKAction.scale(to: 1, duration: 0.2)
+            let scaleSequence = SKAction.sequence([scaleUp, scaleDown])
+            
+            firstHeart.run(scaleSequence, completion: {
+                firstHeart.removeFromParent()
+            })
+            
+            // Remove the heart from the array after the animation
+            heartNodes.remove(at: 0)
+        }
         
-        let scaleUp = SKAction.scale(to: 1.5, duration: 0.2)
-        let scaleDown = SKAction.scale(to: 1, duration: 0.2)
-        let scaleSequence = SKAction.sequence([scaleUp, scaleDown])
-        livesLabel.run(scaleSequence)
+        // Check for game over
+        if livesNumber < 1 {
+            runGameOver()
+        }
+    }
+    
+    func loseAllLives() {
         
-        if livesNumber < 1 { runGameOver() }
+        for heart in heartNodes {
+            // Animate the first heart before removing it
+            let scaleUp = SKAction.scale(to: 1.5, duration: 0.2)
+            let scaleDown = SKAction.scale(to: 1, duration: 0.2)
+            let scaleSequence = SKAction.sequence([scaleUp, scaleDown])
+            
+            heart.run(scaleSequence, completion: {
+                heart.removeFromParent()
+            })
+        }
         
+        runGameOver()
     }
     
     
     func addScore() {
         
         gameScore += 1
-        scoreLabel.text = "Score: \(gameScore)"
+        scoreLabel.position = CGPoint(x: self.size.width * 0.255, y: self.size.height * 0.9)
+        scoreLabel.text = "\(gameScore)"
         
         if gameScore == 10 || gameScore == 25 || gameScore == 50 {
             startNewLevel()
@@ -247,7 +292,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             body1.node?.removeFromParent()
             body2.node?.removeFromParent()
             
-            runGameOver()
+            loseAllLives()
         }
         
         //if the bullet has hit the enemy
