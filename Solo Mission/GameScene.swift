@@ -25,6 +25,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let explosionSound = SKAction.playSoundFileNamed("explosionSoundEffect", waitForCompletion: false)
     
     let tapToStartLabel = SKLabelNode(fontNamed: "the Bold Font")
+
     
     enum gameState {
         case preGame //game state before the game starts
@@ -39,7 +40,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         static let Player : UInt32 = 0b1   //1
         static let Bullet : UInt32 = 0b10  //2
         static let Enemy : UInt32 = 0b100  //4
-        
+        static let Asteroid: UInt32 = 0b1000 // 8
     }
     
     func random(min: CGFloat, max: CGFloat) -> CGFloat {
@@ -88,7 +89,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         
         gameScore = 0
-        
+
         self.physicsWorld.contactDelegate = self
         
         for i in 0...1 {
@@ -356,7 +357,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let spawn = SKAction.run(spawnEnemy)
         let waitToSpawn = SKAction.wait(forDuration: levelDuration)
-        let spawnSequence = SKAction.sequence([waitToSpawn, spawn])
+        let spawnSequence = SKAction.sequence([waitToSpawn, spawn, SKAction.run(spawnAsteroid)])
         let spawnForever = SKAction.repeatForever(spawnSequence)
         self.run(spawnForever, withKey: "spawningEnemies")
     }
@@ -383,14 +384,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
-    
+    // Declare enemy spawning coordinates globally to make sure asteroids don't spawn into enemies
+    var randomEnemyXStart = CGFloat(-1)
+    var randomEnemyXEnd = CGFloat(-1)
+
     func spawnEnemy() {
         
-        let randomXStart = random(min: gameArea.minX, max: gameArea.maxX)
-        let randomXEnd = random(min: gameArea.minX, max: gameArea.maxX)
+        randomEnemyXStart = random(min: gameArea.minX, max: gameArea.maxX)
+        randomEnemyXEnd = random(min: gameArea.minX, max: gameArea.maxX)
         
-        let startPoint = CGPoint(x: randomXStart, y: self.size.height * 1.2)
-        let endPoint = CGPoint(x: randomXEnd, y: -self.size.height * 0.2)
+        let startPoint = CGPoint(x: randomEnemyXStart, y: self.size.height * 1.2)
+        let endPoint = CGPoint(x: randomEnemyXEnd, y: -self.size.height * 0.2)
         
         let enemy = SKSpriteNode(imageNamed: "enemyShip")
         enemy.name = "Enemy"
@@ -415,6 +419,60 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let dy = endPoint.y - startPoint.y
         let amountToRot = atan2(dy, dx)
         enemy.zRotation = amountToRot
+        
+    }
+
+    func spawnAsteroid() {
+        
+        var randomAstXStart = CGFloat(-1)
+        var randomAstXEnd = CGFloat(-1)
+
+        //Generate random starting and ending coordinates for the asteroid, making sure it doesn't spawn in an enemy
+        while true {
+            let randStart = random(min: gameArea.minX, max: gameArea.maxX)
+            if randStart != randomEnemyXStart - 65 || randStart != randomEnemyXStart + 65 {
+                randomAstXStart = randStart
+                break
+            }
+        }
+        
+        while true {
+            let randEnd = random(min: gameArea.minX, max: gameArea.maxX)
+            if randEnd != randomEnemyXEnd - 65 || randEnd != randomEnemyXEnd + 65 {
+                randomAstXEnd = randEnd
+                break
+            }
+        }
+    
+        let startPoint = CGPoint(x: randomAstXStart, y: self.size.height * 1.2)
+        let endPoint = CGPoint(x: randomAstXEnd, y: -self.size.height * 0.2)
+        
+        let asteroid = SKSpriteNode(imageNamed: "smallAsteroid")
+        asteroid.name = "Asteroid"
+        asteroid.setScale(1)
+        asteroid.position = startPoint
+        asteroid.zPosition = 3
+        asteroid.physicsBody = SKPhysicsBody(rectangleOf: asteroid.size)
+        asteroid.physicsBody!.affectedByGravity = false
+        asteroid.physicsBody!.categoryBitMask = PhysicsCategories.Asteroid
+        asteroid.physicsBody!.collisionBitMask = PhysicsCategories.None
+        asteroid.physicsBody!.contactTestBitMask = PhysicsCategories.Player | PhysicsCategories.Bullet
+        self.addChild(asteroid)
+        
+        let moveAsteroid = SKAction.move(to: endPoint, duration: 2.1)
+        let deleteAsteroid = SKAction.removeFromParent()
+        let loseALifeAction = SKAction.run(loseALife)
+
+        let asteroidSequence = SKAction.sequence([moveAsteroid, deleteAsteroid, loseALifeAction])
+        
+        
+        
+        if currentGameState == gameState.inGame { asteroid.run(asteroidSequence) }
+        
+//        let dx = endPoint.x - startPoint.x
+//        let dy = endPoint.y - startPoint.y
+//        let amountToRot = atan2(dy, dx)
+//        enemy.zRotation = amountToRot
         
     }
     
