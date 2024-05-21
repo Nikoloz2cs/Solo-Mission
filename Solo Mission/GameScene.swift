@@ -23,7 +23,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let player = SKSpriteNode(imageNamed: "playerShip")
     let bulletSound = SKAction.playSoundFileNamed("laserBulletSoundEffect", waitForCompletion: false)
     let explosionSound = SKAction.playSoundFileNamed("explosionSoundEffect", waitForCompletion: false)
-    
+    var bulletSparkSound = SKAction.playSoundFileNamed("bulletSparkSoundEffect", waitForCompletion: false)
+        
     let tapToStartLabel = SKLabelNode(fontNamed: "the Bold Font")
 
     
@@ -250,6 +251,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.removeAllActions()
         self.enumerateChildNodes(withName: "Bullet") { (bullet, stop) in bullet.removeAllActions() }
         self.enumerateChildNodes(withName: "Enemy") { (enemy, stop) in enemy.removeAllActions() }
+        self.enumerateChildNodes(withName: "Asteroid") { (asteroid, stop) in asteroid.removeAllActions() }
+
         
         //change to game over scene
         let changeSceneAction = SKAction.run(changeScene)
@@ -284,12 +287,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             body2 = contact.bodyA
         }
         
+        // If spawning something(explosion, bulletSpark,..) where something else previously was, check for its existence incase it was deleted(check for the body != nil).
+        
         //if the player has hit the enemy
         if body1.categoryBitMask == PhysicsCategories.Player && body2.categoryBitMask == PhysicsCategories.Enemy {
             
-            spawnExplosion(spawnPosition: body1.node!.position)
-            spawnExplosion(spawnPosition: body2.node!.position)
-            
+            if body1.node != nil && body2.node != nil {
+                spawnExplosion(spawnPosition: body1.node!.position)
+                spawnExplosion(spawnPosition: body2.node!.position)
+            }
             body1.node?.removeFromParent()
             body2.node?.removeFromParent()
             
@@ -314,6 +320,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         }
         
+        //if the enemy hit the asteroid
+        if body1.categoryBitMask == PhysicsCategories.Enemy && body2.categoryBitMask == PhysicsCategories.Asteroid {
+            
+            if body1.node != nil {
+                spawnExplosion(spawnPosition: body1.node!.position)
+            }
+            body1.node?.removeFromParent()
+        }
+        
+        //if the player hit the asteroid
+        if body1.categoryBitMask == PhysicsCategories.Player && body2.categoryBitMask == PhysicsCategories.Asteroid {
+            
+            if body1.node != nil {
+                spawnExplosion(spawnPosition: body1.node!.position)
+            }
+            body1.node?.removeFromParent()
+            
+            loseAllLives()
+        }
+        
+        //if the byullet hit the asteroid
+        if body1.categoryBitMask == PhysicsCategories.Bullet && body2.categoryBitMask == PhysicsCategories.Asteroid {
+            
+            if body1.node != nil {
+                spawnBulletSpark(spawnPosition: body1.node!.position)
+            }
+            body1.node?.removeFromParent()
+        }
+        
         
     }
     
@@ -333,6 +368,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let explosionSequence = SKAction.sequence([explosionSound, scaleIn, fadeOut, delete])
         
         explosion.run(explosionSequence)
+    }
+    
+    func spawnBulletSpark(spawnPosition: CGPoint) {
+        
+        let bulletSpark = SKSpriteNode(imageNamed: "bulletSpark")
+        bulletSpark.position = spawnPosition
+        bulletSpark.zPosition = 4
+        bulletSpark.setScale(0)
+        self.addChild(bulletSpark)
+        
+        let scaleIn = SKAction.scale(to: 0.15, duration: 0.05)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.05)
+        let delete = SKAction.removeFromParent()
+        
+        
+        let bulletSparkSequence = SKAction.sequence([bulletSparkSound, scaleIn, fadeOut, delete])
+        bulletSpark.run(bulletSparkSequence)
     }
     
     func startNewLevel() {
@@ -443,28 +495,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 break
             }
         }
+        
+        let randAstSize = random(min: 0.4, max: 1.1)
     
         let startPoint = CGPoint(x: randomAstXStart, y: self.size.height * 1.2)
         let endPoint = CGPoint(x: randomAstXEnd, y: -self.size.height * 0.2)
         
-        let asteroid = SKSpriteNode(imageNamed: "smallAsteroid")
+        let asteroidTexture = SKTexture(imageNamed: "smallAsteroid")
+        let asteroid = SKSpriteNode(texture: asteroidTexture)
         asteroid.name = "Asteroid"
-        asteroid.setScale(1)
+        asteroid.setScale(randAstSize)
         asteroid.position = startPoint
         asteroid.zPosition = 3
-        asteroid.physicsBody = SKPhysicsBody(rectangleOf: asteroid.size)
+
+        // Create the physics body using the texture for accurate hitbox
+        asteroid.physicsBody = SKPhysicsBody(texture: asteroidTexture, size: asteroid.size)
         asteroid.physicsBody!.affectedByGravity = false
         asteroid.physicsBody!.categoryBitMask = PhysicsCategories.Asteroid
         asteroid.physicsBody!.collisionBitMask = PhysicsCategories.None
-        asteroid.physicsBody!.contactTestBitMask = PhysicsCategories.Player | PhysicsCategories.Bullet
+        asteroid.physicsBody!.contactTestBitMask = PhysicsCategories.Player | PhysicsCategories.Bullet | PhysicsCategories.Enemy
         self.addChild(asteroid)
         
-        let moveAsteroid = SKAction.move(to: endPoint, duration: 2.1)
-        let deleteAsteroid = SKAction.removeFromParent()
-        let loseALifeAction = SKAction.run(loseALife)
-
-        let asteroidSequence = SKAction.sequence([moveAsteroid, deleteAsteroid, loseALifeAction])
         
+        let moveAsteroid = SKAction.move(to: endPoint, duration: 2.1)
+        
+        // Define rotation range in radians (120 degrees to 480 degrees)
+        let minRotationAngle = 2 * CGFloat.pi / 3
+        let maxRotationAngle = 8 * CGFloat.pi / 3
+        // Rotate the asteroid by 120-480 degrees (2pi/3-8pi/3 radians) over the duration of its movement
+        let randRotationAngle = random(min: minRotationAngle, max: maxRotationAngle)
+        let rotateAsteroid = SKAction.rotate(byAngle: randRotationAngle, duration: 2.1)
+
+        // Group the movement and rotation actions so they run simultaneously
+        let asteroidGroup = SKAction.group([moveAsteroid, rotateAsteroid])
+        let deleteAsteroid = SKAction.removeFromParent()
+
+        let asteroidSequence = SKAction.sequence([asteroidGroup, deleteAsteroid])
         
         
         if currentGameState == gameState.inGame { asteroid.run(asteroidSequence) }
@@ -472,7 +538,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //        let dx = endPoint.x - startPoint.x
 //        let dy = endPoint.y - startPoint.y
 //        let amountToRot = atan2(dy, dx)
-//        enemy.zRotation = amountToRot
+//        asteroid.zRotation = amountToRot
         
     }
     
