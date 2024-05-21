@@ -41,7 +41,7 @@ class MainMenuScene: SKScene {
         gameName2.zPosition = 1
         self.addChild(gameName2)
         
-        let startGame = SKLabelNode(fontNamed: "The Bold Font")
+        let startGame = SKLabelNode(fontNamed: "Futura-MediumItalic")
         startGame.text = "Start Game"
         startGame.fontSize = 150
         startGame.fontColor = SKColor.white

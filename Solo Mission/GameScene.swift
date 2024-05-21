@@ -13,19 +13,18 @@ var gameScore = 0
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
-    let scoreLabel = SKLabelNode(fontNamed: "The Bold Font")
+    let scoreLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
     
     var levelNumber = 0
     var livesNumber = 3
     var heartNodes: [SKSpriteNode] = []
-    //let livesLabel = SKLabelNode(fontNamed: "The Bold Font")
-    
+
     let player = SKSpriteNode(imageNamed: "playerShip")
     let bulletSound = SKAction.playSoundFileNamed("laserBulletSoundEffect", waitForCompletion: false)
     let explosionSound = SKAction.playSoundFileNamed("explosionSoundEffect", waitForCompletion: false)
     var bulletSparkSound = SKAction.playSoundFileNamed("bulletSparkSoundEffect", waitForCompletion: false)
         
-    let tapToStartLabel = SKLabelNode(fontNamed: "the Bold Font")
+    let tapToStartLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
 
     
     enum gameState {

@@ -10,7 +10,7 @@ import SpriteKit
 
 class GameOverScene: SKScene {
     
-    let restartLabel = SKLabelNode(fontNamed: "the Bold Font")
+    let restartLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
     
     override func didMove(to view: SKView) {
             
@@ -19,15 +19,15 @@ class GameOverScene: SKScene {
         background.zPosition = 0
         self.addChild(background)
         
-        let gameoverLabel = SKLabelNode(fontNamed: "the Bold Font")
+        let gameoverLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
         gameoverLabel.text = "Game Over"
-        gameoverLabel.fontSize = 175
+        gameoverLabel.fontSize = 155
         gameoverLabel.fontColor = SKColor.white
         gameoverLabel.position = CGPoint(x: self.size.width * 0.5, y: self.size.height * 0.7)
         gameoverLabel.zPosition = 1
         self.addChild(gameoverLabel)
         
-        let scoreLabel = SKLabelNode(fontNamed: "the Bold Font")
+        let scoreLabel = SKLabelNode(fontNamed: "f")
         scoreLabel.text = "Score: \(gameScore)"
         scoreLabel.fontSize = 125
         scoreLabel.fontColor = SKColor.white
@@ -41,9 +41,26 @@ class GameOverScene: SKScene {
         if gameScore > highscoreNumber {
             highscoreNumber = gameScore
             defaults.set(highscoreNumber, forKey: "highscoreSaved")
+            
+            let newHighScoreLabel = SKLabelNode(fontNamed: "Optima-ExtraBlack")
+            newHighScoreLabel.text = "*NEW*"
+            newHighScoreLabel.fontSize = 50
+            newHighScoreLabel.fontColor = SKColor.red
+            newHighScoreLabel.position = CGPoint(x: self.size.width * 0.27,  y: self.size.height * 0.493)
+            newHighScoreLabel.zRotation = CGFloat.pi / 8
+            newHighScoreLabel.zPosition = 3
+            self.addChild(newHighScoreLabel)
+            
+            let scaleUp = SKAction.scale(to: 1.5, duration: 0.7)
+            let scaleDown = SKAction.scale(to: 1, duration: 0.7)
+            let scaleSequence = SKAction.sequence([scaleUp, scaleDown])
+            
+            let bounceEffect = SKAction.repeatForever(scaleSequence)
+            
+            newHighScoreLabel.run(bounceEffect)
         }
         
-        let highScoreLabel = SKLabelNode(fontNamed: "the Bold Font")
+        let highScoreLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
         highScoreLabel.text = "High Score: \(highscoreNumber)"
         highScoreLabel.fontSize = 125
         highScoreLabel.fontColor = SKColor.white
