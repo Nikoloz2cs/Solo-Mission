@@ -17,6 +17,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var levelNumber = 0
     var livesNumber = 3
+    var heartOutlineNodes: [SKSpriteNode] = []
     var heartNodes: [SKSpriteNode] = []
 
     let player = SKSpriteNode(imageNamed: "playerShip")
@@ -49,12 +50,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func createHearts() {
         // Remove any existing heart nodes
+        for heartOutline in heartOutlineNodes {
+            heartOutline.removeFromParent()
+        }
+        heartOutlineNodes.removeAll()
+        
         for heart in heartNodes {
             heart.removeFromParent()
         }
         heartNodes.removeAll()
         
         // Create new heart nodes
+        
+        // hard code 5 possible heart outlines, start with 3 hearts (make first two outlines invisible until uncovered)
+        for i in 0...4 {
+            let heartOutline = SKSpriteNode(imageNamed: "heartOutline")
+            heartOutline.setScale(0.7)
+            heartOutline.position = CGPoint(x: self.size.width * 0.7 + CGFloat(i * 40) - 80, y: self.size.height * 1.1)
+            heartOutline.zPosition = 98
+            heartOutlineNodes.append(heartOutline)
+            self.addChild(heartOutline)
+        }
+    
+        // make first 2 hearts invisible, fade them in as player gains heart slots
+        heartOutlineNodes[0].alpha = 0
+        heartOutlineNodes[1].alpha = 0
+
+        
         for i in 0..<livesNumber {
             let heart = SKSpriteNode(imageNamed: "heart")
             heart.setScale(0.7)
@@ -129,9 +151,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let moveOntoScreen = SKAction.moveTo(y: self.size.height * 0.9, duration: 0.3)
         scoreLabel.run(moveOntoScreen)
         
+        for heartOutline in heartOutlineNodes {
+            heartOutline.run(moveOntoScreen)
+        }
+        
         for heart in heartNodes {
             heart.run(moveOntoScreen)
         }
+        
         
         tapToStartLabel.text = "Tap To Begin"
         tapToStartLabel.fontSize = 100
