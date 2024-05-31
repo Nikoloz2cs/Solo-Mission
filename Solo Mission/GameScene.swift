@@ -16,8 +16,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let scoreLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
     
     var levelNumber = 0
-    var livesNumber = 3
-    var heartOutlineNodes: [SKSpriteNode] = []
+    var hitpoints = 3
+    var maxHitpoints = 3
+    var heartSlotNodes: [SKSpriteNode] = []
     var heartNodes: [SKSpriteNode] = []
 
     let player = SKSpriteNode(imageNamed: "playerShip")
@@ -37,11 +38,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var currentGameState = gameState.preGame
     
     struct PhysicsCategories {
-        static let None : UInt32 = 0       //0
-        static let Player : UInt32 = 0b1   //1
-        static let Bullet : UInt32 = 0b10  //2
-        static let Enemy : UInt32 = 0b100  //4
-        static let Asteroid: UInt32 = 0b1000 // 8
+        static let None :        UInt32 = 0       //0
+        static let Player :      UInt32 = 0b1     //1
+        static let Bullet :      UInt32 = 0b10    //2
+        static let Enemy :       UInt32 = 0b100   //...
+        static let Asteroid:     UInt32 = 0b1000
+        static let Hitpoint:     UInt32 = 0b10000
+        static let hitpointSlot: UInt32 = 0b100000
     }
     
     func random(min: CGFloat, max: CGFloat) -> CGFloat {
@@ -50,10 +53,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func createHearts() {
         // Remove any existing heart nodes
-        for heartOutline in heartOutlineNodes {
-            heartOutline.removeFromParent()
+        for heartSlot in heartSlotNodes {
+            heartSlot.removeFromParent()
         }
-        heartOutlineNodes.removeAll()
+        heartSlotNodes.removeAll()
         
         for heart in heartNodes {
             heart.removeFromParent()
@@ -64,27 +67,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // hard code 5 possible heart outlines, start with 3 hearts (make first two outlines invisible until uncovered)
         for i in 0...4 {
-            let heartOutline = SKSpriteNode(imageNamed: "heartOutline")
-            heartOutline.setScale(0.7)
-            heartOutline.position = CGPoint(x: self.size.width * 0.7 + CGFloat(i * 40) - 80, y: self.size.height * 1.1)
-            heartOutline.zPosition = 98
-            heartOutlineNodes.append(heartOutline)
-            self.addChild(heartOutline)
+            let heartSlot = SKSpriteNode(imageNamed: "heartOutline")
+            heartSlot.setScale(0.7)
+            heartSlot.position = CGPoint(x: self.size.width * 0.7 + CGFloat(i * 40) - 80, y: self.size.height * 1.1)
+            heartSlot.zPosition = 98
+            heartSlotNodes.append(heartSlot)
+            self.addChild(heartSlot)
         }
     
         // make first 2 hearts invisible, fade them in as player gains heart slots
-        heartOutlineNodes[0].alpha = 0
-        heartOutlineNodes[1].alpha = 0
+        heartSlotNodes[0].alpha = 0
+        heartSlotNodes[1].alpha = 0
 
         
-        for i in 0..<livesNumber {
+        for i in 0...4 {
             let heart = SKSpriteNode(imageNamed: "heart")
             heart.setScale(0.7)
-            heart.position = CGPoint(x: self.size.width * 0.7 + CGFloat(i * 40), y: self.size.height * 1.1)
+            heart.position = CGPoint(x: self.size.width * 0.7 + CGFloat(i * 40) - 80, y: self.size.height * 1.1)
             heart.zPosition = 99
             heartNodes.append(heart)
             self.addChild(heart)
         }
+        
+        heartNodes[0].alpha = 0
+        heartNodes[1].alpha = 0
     }
     
     
@@ -151,8 +157,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let moveOntoScreen = SKAction.moveTo(y: self.size.height * 0.9, duration: 0.3)
         scoreLabel.run(moveOntoScreen)
         
-        for heartOutline in heartOutlineNodes {
-            heartOutline.run(moveOntoScreen)
+        for heartSlot in heartSlotNodes {
+            heartSlot.run(moveOntoScreen)
         }
         
         for heart in heartNodes {
@@ -215,47 +221,89 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     
-    func loseALife() {
+    func loseHitpoint() {
         // Ensure there are lives to lose
-        if livesNumber > 0 {
-            livesNumber -= 1
+        if hitpoints > 0 {
             
-            // Animate the first heart before removing it
-            let firstHeart = heartNodes[0]
+            // Animate the heart before removing it
+            let heart = heartNodes[5 - hitpoints]
+            
+            // Stop any ongoing animations on the heart
+            heart.removeAllActions()
+            
+            // Ensure the heart is at its normal size
+            heart.setScale(1.0)
+            
             let scaleUp = SKAction.scale(to: 1.5, duration: 0.2)
             let scaleDown = SKAction.scale(to: 1, duration: 0.2)
-            let scaleSequence = SKAction.sequence([scaleUp, scaleDown])
+            // Make the heart disappear from the array after the animation
+            let makeInvisible = SKAction.run { heart.alpha = 0}
+            let scaleSequence = SKAction.sequence([scaleUp, scaleDown, makeInvisible])
             
-            firstHeart.run(scaleSequence, completion: {
-                firstHeart.removeFromParent()
-            })
+            heart.run(scaleSequence)
             
-            // Remove the heart from the array after the animation
-            heartNodes.remove(at: 0)
+            hitpoints -= 1
         }
         
         // Check for game over
-        if livesNumber < 1 {
+        if hitpoints < 1 {
             runGameOver()
         }
     }
     
-    func loseAllLives() {
+    
+    func loseAllHitpoints() {
         
         for heart in heartNodes {
             // Animate the first heart before removing it
             let scaleUp = SKAction.scale(to: 1.5, duration: 0.2)
             let scaleDown = SKAction.scale(to: 1, duration: 0.2)
-            let scaleSequence = SKAction.sequence([scaleUp, scaleDown])
+            let makeInsible = SKAction.run { heart.alpha = 0 }
+            let scaleSequence = SKAction.sequence([scaleUp, scaleDown, makeInsible])
             
-            heart.run(scaleSequence, completion: {
-                heart.removeFromParent()
-            })
-        }
+            heart.run(scaleSequence)
+            
+            }
         
         runGameOver()
     }
     
+    func gainHitpoint() {
+        
+        if hitpoints < maxHitpoints {
+            
+            hitpoints += 1
+            
+            // Get the heart to make visible
+            let heart = heartNodes[ 5 - hitpoints ]
+            
+            // Stop any ongoing animations on the heart
+            heart.removeAllActions()
+            
+            // Ensure the heart is at its normal size
+            heart.setScale(1.0)
+            
+            // Create a fade-in action
+            let fadeIn = SKAction.fadeIn(withDuration: 0.8)
+            
+            // Run the fade-in action on the heart
+            heart.run(fadeIn)
+        }
+    }
+    
+    func gainHitpointSlot() {
+            
+        maxHitpoints += 1
+        
+        // Get the hear slot to make visible
+        let heartSlot = heartSlotNodes[ 5 - maxHitpoints ]
+        
+        // Create a fade-in action
+        let fadeIn = SKAction.fadeIn(withDuration: 0.8)
+        
+        // Run the fade-in action on the heart
+        heartSlot.run(fadeIn)
+    }
     
     func addScore() {
         
@@ -278,6 +326,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.enumerateChildNodes(withName: "Bullet") { (bullet, stop) in bullet.removeAllActions() }
         self.enumerateChildNodes(withName: "Enemy") { (enemy, stop) in enemy.removeAllActions() }
         self.enumerateChildNodes(withName: "Asteroid") { (asteroid, stop) in asteroid.removeAllActions() }
+        self.enumerateChildNodes(withName: "Heart") { (heart, stop) in heart.removeAllActions() }
+        self.enumerateChildNodes(withName: "HeartSlot") { (heartSlot, stop) in heartSlot.removeAllActions() }
 
         
         //change to game over scene
@@ -325,13 +375,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             body1.node?.removeFromParent()
             body2.node?.removeFromParent()
             
-            loseAllLives()
+            loseAllHitpoints()
         }
         
         //if the bullet has hit the enemy
         if body1.categoryBitMask == PhysicsCategories.Bullet && body2.categoryBitMask == PhysicsCategories.Enemy {
             
             addScore()
+            
+            let randNumHeart = random(min: 1.0, max: 4.0)
+            let randNumHeartSlot = random(min: 1.0, max: 7.0)
+            
+            if body2.node != nil {
+                // if the player rolls below a 2 on the random number generator(1/3 chance) , spawn a heart to restore health
+                if randNumHeart < 2.0 && hitpoints != maxHitpoints {
+                    spawnHeart(spawnPosition: body2.node!.position)
+                }
+                
+                // if the score is appropriate, give players a chance(1/6) at obtaining extra heart slots for more max hp, capped at 5.
+                if randNumHeartSlot < 2.0  && maxHitpoints == 3 && gameScore > 10 {
+                    spawnHeartSlot(spawnPosition: body2.node!.position)
+                }
+                
+                if randNumHeartSlot < 2.0 && maxHitpoints == 4 && gameScore > 25 {
+                    spawnHeartSlot(spawnPosition: body2.node!.position)
+                }
+            }
             
             if body2.node != nil {
                 if body2.node!.position.y > self.size.height {
@@ -363,7 +432,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             body1.node?.removeFromParent()
             
-            loseAllLives()
+            loseAllHitpoints()
         }
         
         //if the byullet hit the asteroid
@@ -375,6 +444,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             body1.node?.removeFromParent()
         }
         
+        //if the player "hit" the heart
+        if body1.categoryBitMask == PhysicsCategories.Player && body2.categoryBitMask == PhysicsCategories.Hitpoint {
+            
+            body2.node?.removeFromParent()
+            gainHitpoint()
+        }
+        
+        //if the player "hit" the heart slot
+        if body1.categoryBitMask == PhysicsCategories.Player && body2.categoryBitMask == PhysicsCategories.hitpointSlot {
+            
+            body2.node?.removeFromParent()
+            gainHitpointSlot()
+        }
         
     }
     
@@ -411,6 +493,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let bulletSparkSequence = SKAction.sequence([bulletSparkSound, scaleIn, fadeOut, delete])
         bulletSpark.run(bulletSparkSequence)
+    }
+    
+    func spawnHeart(spawnPosition: CGPoint) {
+        
+        let heart = SKSpriteNode(imageNamed: "heart")
+        heart.name = "Heart"
+        heart.position = spawnPosition
+        heart.zPosition = 4
+        heart.physicsBody = SKPhysicsBody(rectangleOf: heart.size)
+        heart.physicsBody!.affectedByGravity = false
+        heart.physicsBody!.categoryBitMask = PhysicsCategories.Hitpoint
+        heart.physicsBody!.collisionBitMask = PhysicsCategories.None
+        heart.physicsBody!.contactTestBitMask = PhysicsCategories.Player
+        self.addChild(heart)
+        
+        let bounceHeart = SKAction.moveTo(y: heart.position.y + 40, duration: 0.1)
+        let moveHeartDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: 0.8)
+        let deleteHeart = SKAction.removeFromParent()
+        let gainHitpointAction = SKAction.run(gainHitpoint)
+        let heartSequence = SKAction.sequence([bounceHeart, moveHeartDown, deleteHeart, gainHitpointAction])
+        
+        if currentGameState == gameState.inGame { heart.run(heartSequence)}
+        
+    }
+    
+    func spawnHeartSlot(spawnPosition: CGPoint) {
+        
+        let addHeartSlot = SKSpriteNode(imageNamed: "heartSlotAdd")
+        addHeartSlot.name = "HeartSlot"
+        addHeartSlot.position = spawnPosition
+        addHeartSlot.zPosition = 4
+        addHeartSlot.physicsBody = SKPhysicsBody(rectangleOf: addHeartSlot.size)
+        addHeartSlot.physicsBody!.affectedByGravity = false
+        addHeartSlot.physicsBody!.categoryBitMask = PhysicsCategories.hitpointSlot
+        addHeartSlot.physicsBody!.collisionBitMask = PhysicsCategories.None
+        addHeartSlot.physicsBody!.contactTestBitMask = PhysicsCategories.Player
+        self.addChild(addHeartSlot)
+        
+        let bounceHeartSlot = SKAction.moveTo(y: addHeartSlot.position.y + 40, duration: 0.3)
+        let moveHeartSlotDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: 2.2)
+        let deleteHeartSlot = SKAction.removeFromParent()
+        let gainHitpointSlotAction = SKAction.run(gainHitpointSlot)
+        let heartSequence = SKAction.sequence([bounceHeartSlot, moveHeartSlotDown, deleteHeartSlot, gainHitpointSlotAction])
+        
+        if currentGameState == gameState.inGame { addHeartSlot.run(heartSequence)}
+        
     }
     
     func startNewLevel() {
@@ -488,8 +616,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let moveEnemy = SKAction.move(to: endPoint, duration: 1.5)
         let deleteEnemy = SKAction.removeFromParent()
-        let loseALifeAction = SKAction.run(loseALife)
-        let enemySequence = SKAction.sequence([moveEnemy, deleteEnemy, loseALifeAction])
+        let loseHitpointAction = SKAction.run(loseHitpoint)
+        let enemySequence = SKAction.sequence([moveEnemy, deleteEnemy, loseHitpointAction])
         
         if currentGameState == gameState.inGame { enemy.run(enemySequence) }
         
@@ -560,13 +688,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         
         if currentGameState == gameState.inGame { asteroid.run(asteroidSequence) }
-        
-//        let dx = endPoint.x - startPoint.x
-//        let dy = endPoint.y - startPoint.y
-//        let amountToRot = atan2(dy, dx)
-//        asteroid.zRotation = amountToRot
-        
+
     }
+    
     
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
