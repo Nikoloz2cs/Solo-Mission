@@ -281,10 +281,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             heart.removeAllActions()
             
             // Ensure the heart is at its normal size
-            heart.setScale(1.0)
+            heart.setScale(0.7)
             
             // Create a fade-in action
-            let fadeIn = SKAction.fadeIn(withDuration: 0.8)
+            let fadeIn = SKAction.fadeIn(withDuration: 1.2)
             
             // Run the fade-in action on the heart
             heart.run(fadeIn)
@@ -299,7 +299,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let heartSlot = heartSlotNodes[ 5 - maxHitpoints ]
         
         // Create a fade-in action
-        let fadeIn = SKAction.fadeIn(withDuration: 0.8)
+        let fadeIn = SKAction.fadeIn(withDuration: 1.4)
         
         // Run the fade-in action on the heart
         heartSlot.run(fadeIn)
@@ -393,7 +393,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
                 
                 // if the score is appropriate, give players a chance(1/6) at obtaining extra heart slots for more max hp, capped at 5.
-                if randNumHeartSlot < 2.0  && maxHitpoints == 3 && gameScore > 10 {
+                //if randNumHeartSlot < 2.0  && maxHitpoints == 3 && gameScore > 10 {
+                if maxHitpoints == 3 {
                     spawnHeartSlot(spawnPosition: body2.node!.position)
                 }
                 
@@ -499,6 +500,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let heart = SKSpriteNode(imageNamed: "heart")
         heart.name = "Heart"
+        heart.setScale(0.7)
         heart.position = spawnPosition
         heart.zPosition = 4
         heart.physicsBody = SKPhysicsBody(rectangleOf: heart.size)
@@ -508,11 +510,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         heart.physicsBody!.contactTestBitMask = PhysicsCategories.Player
         self.addChild(heart)
         
-        let bounceHeart = SKAction.moveTo(y: heart.position.y + 40, duration: 0.1)
-        let moveHeartDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: 0.8)
+        let bounceHeartY = SKAction.moveTo(y: heart.position.y + 50, duration: 0.15)
+        var bounceHeartX: SKAction
+        if heart.position.x < self.size.width / 2 {
+            bounceHeartX = SKAction.moveTo(x: heart.position.x + 30, duration: 0.15)
+        } else {
+            bounceHeartX = SKAction.moveTo(x: heart.position.x - 30, duration: 0.15)
+        }
+        let moveHeartDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (spawnPosition.y - self.size.height * 0.2) / 400)// The speed of the heart needs to be constant
         let deleteHeart = SKAction.removeFromParent()
-        let gainHitpointAction = SKAction.run(gainHitpoint)
-        let heartSequence = SKAction.sequence([bounceHeart, moveHeartDown, deleteHeart, gainHitpointAction])
+        let heartSequence = SKAction.sequence([bounceHeartY, bounceHeartX, moveHeartDown, deleteHeart])
         
         if currentGameState == gameState.inGame { heart.run(heartSequence)}
         
@@ -522,6 +529,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let addHeartSlot = SKSpriteNode(imageNamed: "heartSlotAdd")
         addHeartSlot.name = "HeartSlot"
+        addHeartSlot.setScale(0.7)
         addHeartSlot.position = spawnPosition
         addHeartSlot.zPosition = 4
         addHeartSlot.physicsBody = SKPhysicsBody(rectangleOf: addHeartSlot.size)
@@ -531,11 +539,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addHeartSlot.physicsBody!.contactTestBitMask = PhysicsCategories.Player
         self.addChild(addHeartSlot)
         
-        let bounceHeartSlot = SKAction.moveTo(y: addHeartSlot.position.y + 40, duration: 0.3)
-        let moveHeartSlotDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: 2.2)
+        let bounceHeartSlotY = SKAction.moveTo(y: addHeartSlot.position.y + 50, duration: 0.2)
+        var bounceHeartSlotX: SKAction
+        if addHeartSlot.position.x < self.size.width / 2 {
+            bounceHeartSlotX = SKAction.moveTo(x: addHeartSlot.position.x + 30, duration: 0.15)
+        } else {
+            bounceHeartSlotX = SKAction.moveTo(x: addHeartSlot.position.x - 30, duration: 0.15)
+        }
+        let moveHeartSlotDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (spawnPosition.y - self.size.height * 0.2) / 400)
         let deleteHeartSlot = SKAction.removeFromParent()
-        let gainHitpointSlotAction = SKAction.run(gainHitpointSlot)
-        let heartSequence = SKAction.sequence([bounceHeartSlot, moveHeartSlotDown, deleteHeartSlot, gainHitpointSlotAction])
+        let heartSequence = SKAction.sequence([bounceHeartSlotY, bounceHeartSlotX, moveHeartSlotDown, deleteHeartSlot])
         
         if currentGameState == gameState.inGame { addHeartSlot.run(heartSequence)}
         
@@ -561,9 +574,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             print("Cannot find level info")
         }
         
-        let spawn = SKAction.run(spawnEnemy)
+        let spawnEnemy = SKAction.run(spawnEnemy)
+        let spawnAsteroid = SKAction.run(spawnAsteroid)
         let waitToSpawn = SKAction.wait(forDuration: levelDuration)
-        let spawnSequence = SKAction.sequence([waitToSpawn, spawn, SKAction.run(spawnAsteroid)])
+        let spawnSequence = SKAction.sequence([waitToSpawn, spawnEnemy, spawnAsteroid])
         let spawnForever = SKAction.repeatForever(spawnSequence)
         self.run(spawnForever, withKey: "spawningEnemies")
     }
