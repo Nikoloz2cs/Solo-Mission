@@ -393,8 +393,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
                 
                 // if the score is appropriate, give players a chance(1/6) at obtaining extra heart slots for more max hp, capped at 5.
-                //if randNumHeartSlot < 2.0  && maxHitpoints == 3 && gameScore > 10 {
-                if maxHitpoints == 3 {
+                if randNumHeartSlot < 2.0  && maxHitpoints == 3 && gameScore > 10 {
                     spawnHeartSlot(spawnPosition: body2.node!.position)
                 }
                 
@@ -436,7 +435,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             loseAllHitpoints()
         }
         
-        //if the byullet hit the asteroid
+        //if the bullet hit the asteroid
         if body1.categoryBitMask == PhysicsCategories.Bullet && body2.categoryBitMask == PhysicsCategories.Asteroid {
             
             if body1.node != nil {
@@ -510,16 +509,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         heart.physicsBody!.contactTestBitMask = PhysicsCategories.Player
         self.addChild(heart)
         
-        let bounceHeartY = SKAction.moveTo(y: heart.position.y + 50, duration: 0.15)
-        var bounceHeartX: SKAction
+        var bounceHeartX: CGFloat
         if heart.position.x < self.size.width / 2 {
-            bounceHeartX = SKAction.moveTo(x: heart.position.x + 30, duration: 0.15)
+            bounceHeartX = heart.position.x + 30
         } else {
-            bounceHeartX = SKAction.moveTo(x: heart.position.x - 30, duration: 0.15)
+            bounceHeartX = heart.position.x - 30
         }
-        let moveHeartDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (spawnPosition.y - self.size.height * 0.2) / 400)// The speed of the heart needs to be constant
-        let deleteHeart = SKAction.removeFromParent()
-        let heartSequence = SKAction.sequence([bounceHeartY, bounceHeartX, moveHeartDown, deleteHeart])
+        let bounceHeart = SKAction.move(to: CGPoint(x: bounceHeartX, y: heart.position.y + 50), duration: 0.15)
+        bounceHeart.timingMode = .easeOut
+        let moveHeartDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (self.size.height * 0.4 + (spawnPosition.y - self.size.height * 0.2)) / 1100)
+        let deleteHeart = SKAction.removeFromParent()                              // The speed of the heart needs to be constant ^
+        let heartSequence = SKAction.sequence([bounceHeart, moveHeartDown, deleteHeart])
         
         if currentGameState == gameState.inGame { heart.run(heartSequence)}
         
@@ -539,16 +539,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addHeartSlot.physicsBody!.contactTestBitMask = PhysicsCategories.Player
         self.addChild(addHeartSlot)
         
-        let bounceHeartSlotY = SKAction.moveTo(y: addHeartSlot.position.y + 50, duration: 0.2)
-        var bounceHeartSlotX: SKAction
+        var bounceHeartSlotX: CGFloat
         if addHeartSlot.position.x < self.size.width / 2 {
-            bounceHeartSlotX = SKAction.moveTo(x: addHeartSlot.position.x + 30, duration: 0.15)
+            bounceHeartSlotX = addHeartSlot.position.x + 30
         } else {
-            bounceHeartSlotX = SKAction.moveTo(x: addHeartSlot.position.x - 30, duration: 0.15)
+            bounceHeartSlotX = addHeartSlot.position.x - 30
         }
-        let moveHeartSlotDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (spawnPosition.y - self.size.height * 0.2) / 400)
-        let deleteHeartSlot = SKAction.removeFromParent()
-        let heartSequence = SKAction.sequence([bounceHeartSlotY, bounceHeartSlotX, moveHeartSlotDown, deleteHeartSlot])
+        let bounceHeartSlot = SKAction.move(to: CGPoint(x: bounceHeartSlotX, y: addHeartSlot.position.y + 50), duration: 0.15)
+        bounceHeartSlot.timingMode = .easeOut
+        let moveHeartSlotDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (self.size.height * 0.4 + (spawnPosition.y - self.size.height * 0.2)) / 1100)
+        let deleteHeartSlot = SKAction.removeFromParent()                               // The speed of the heart slot needs to be constant ^
+        let heartSequence = SKAction.sequence([bounceHeartSlot, moveHeartSlotDown, deleteHeartSlot])
         
         if currentGameState == gameState.inGame { addHeartSlot.run(heartSequence)}
         
@@ -613,6 +614,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         randomEnemyXStart = random(min: gameArea.minX, max: gameArea.maxX)
         randomEnemyXEnd = random(min: gameArea.minX, max: gameArea.maxX)
         
+        // make sure the enemy doesn't spawn on the edge of the screen and go straight down
+        if randomEnemyXStart - randomEnemyXEnd < 60 {
+            if randomEnemyXStart < gameArea.width / 2 {
+                randomEnemyXEnd += 75
+            } else {
+                randomEnemyXEnd -= 75
+            }
+        }
+        
         let startPoint = CGPoint(x: randomEnemyXStart, y: self.size.height * 1.2)
         let endPoint = CGPoint(x: randomEnemyXEnd, y: -self.size.height * 0.2)
         
@@ -650,7 +660,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         //Generate random starting and ending coordinates for the asteroid, making sure it doesn't spawn in an enemy
         while true {
             let randStart = random(min: gameArea.minX, max: gameArea.maxX)
-            if randStart != randomEnemyXStart - 65 || randStart != randomEnemyXStart + 65 {
+            if randStart != randomEnemyXStart - 200 || randStart != randomEnemyXStart + 200 {
                 randomAstXStart = randStart
                 break
             }
