@@ -20,6 +20,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var maxHitpoints = 3
     var heartSlotNodes: [SKSpriteNode] = []
     var heartNodes: [SKSpriteNode] = []
+    var shielded = false
 
     let player = SKSpriteNode(imageNamed: "playerShip")
     let bulletSound = SKAction.playSoundFileNamed("laserBulletSoundEffect", waitForCompletion: false)
@@ -45,6 +46,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         static let Asteroid:     UInt32 = 0b1000
         static let Hitpoint:     UInt32 = 0b10000
         static let hitpointSlot: UInt32 = 0b100000
+        static let Shield:       UInt32 = 0b1000000
     }
     
     func random(min: CGFloat, max: CGFloat) -> CGFloat {
@@ -133,7 +135,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         }
         
-
         player.setScale(1) //Size of the player ship
         player.position = CGPoint(x: self.size.width/2, y: 0 - player.size.height)
         player.zPosition = 2
@@ -308,8 +309,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func addScore() {
         
         gameScore += 1
-        scoreLabel.position = CGPoint(x: self.size.width * 0.255, y: self.size.height * 0.9)
-        scoreLabel.text = "\(gameScore)"
+
+        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
+        let fadeIn = SKAction.fadeIn(withDuration: 0.2)
+        let move = SKAction.move(to: CGPoint(x: self.size.width * 0.255, y: self.size.height * 0.9), duration: 0.2)
+        let changeScore = SKAction.run { [weak self] in
+            self?.scoreLabel.text = "\(gameScore)"
+        }
+        
+        let scoreLabelSequence = SKAction.sequence([fadeOut, move, changeScore, fadeIn])
+        scoreLabel.run(scoreLabelSequence)
         
         if gameScore == 10 || gameScore == 25 || gameScore == 50 {
             startNewLevel()
@@ -328,6 +337,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.enumerateChildNodes(withName: "Asteroid") { (asteroid, stop) in asteroid.removeAllActions() }
         self.enumerateChildNodes(withName: "Heart") { (heart, stop) in heart.removeAllActions() }
         self.enumerateChildNodes(withName: "HeartSlot") { (heartSlot, stop) in heartSlot.removeAllActions() }
+        self.enumerateChildNodes(withName: "Shield") { (shield, stop) in shield.removeAllActions() }
 
         
         //change to game over scene
@@ -371,11 +381,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if body1.node != nil && body2.node != nil {
                 spawnExplosion(spawnPosition: body1.node!.position)
                 spawnExplosion(spawnPosition: body2.node!.position)
+                
+                body2.node?.removeFromParent()
+                
+                if shielded == false {
+                    
+                    body1.node?.removeFromParent()
+                    
+                    loseAllHitpoints()
+                    
+                } else {
+                    
+                    shielded = false
+                    let fadeOutAction = SKAction.fadeOut(withDuration: 0.2)
+                    let fadeInAction = SKAction.fadeIn(withDuration: 0.2)
+                    let textureChangeAction = SKAction.run {
+                        self.player.texture = SKTexture(imageNamed: "playerShip")
+                        self.player.setScale(1.0)
+                    }
+
+                    let fadeSequence = SKAction.sequence([fadeOutAction, fadeInAction, textureChangeAction, fadeOutAction, fadeInAction])
+
+                    player.run(fadeSequence)
+                    
+                }
             }
-            body1.node?.removeFromParent()
-            body2.node?.removeFromParent()
             
-            loseAllHitpoints()
+
         }
         
         //if the bullet has hit the enemy
@@ -385,6 +417,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             let randNumHeart = random(min: 1.0, max: 4.0)
             let randNumHeartSlot = random(min: 1.0, max: 7.0)
+            let randNumShield = random(min:1.0, max: 16.0)
             
             if body2.node != nil {
                 // if the player rolls below a 2 on the random number generator(1/3 chance) , spawn a heart to restore health
@@ -399,6 +432,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 if randNumHeartSlot < 2.0 && maxHitpoints == 4 && gameScore > 25 {
                     spawnHeartSlot(spawnPosition: body2.node!.position)
+                }
+                
+                // if the player isn't shielded, each enemy has a 1/15 chance of dropping a shield
+                if /*randNumShield < 2.0 && */ shielded == false {
+                    spawnShield(spawnPosition: body2.node!.position)
                 }
             }
             
@@ -456,6 +494,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             body2.node?.removeFromParent()
             gainHitpointSlot()
+        }
+        
+        //if the player "hit" the shield
+        if body1.categoryBitMask == PhysicsCategories.Player && body2.categoryBitMask == PhysicsCategories.Shield {
+            
+            body2.node?.removeFromParent()
+            shielded = true
+            
+            let fadeOutAction = SKAction.fadeOut(withDuration: 0.1)
+            let fadeInAction = SKAction.fadeIn(withDuration: 0.1)
+
+            // Define the texture change action
+            let textureChangeAction = SKAction.run {
+                self.player.texture = SKTexture(imageNamed: "playerShipShielded")
+                self.player.setScale(2.0)
+                
+                // Calculate the new size for the physics body
+                let originalSize = self.player.size
+                let reduction: CGFloat = 34.0 * 2 // 34 pixels from top and 34 from bottom because that's the math for creating an accurate hitbox with the sprite
+                let newHeight = originalSize.height - reduction
+                let newSize = CGSize(width: originalSize.width, height: newHeight)
+                
+                // Create a new physics body with the custom size
+                let customPhysicsBody = SKPhysicsBody(rectangleOf: newSize)
+                customPhysicsBody.affectedByGravity = false
+                customPhysicsBody.categoryBitMask = PhysicsCategories.Player
+                customPhysicsBody.collisionBitMask = PhysicsCategories.None
+                customPhysicsBody.contactTestBitMask = PhysicsCategories.Enemy
+                
+                
+                // Assign the new physics body to the sprite
+                self.player.physicsBody = customPhysicsBody
+            }
+
+            let fadeSequence = SKAction.sequence([fadeOutAction, textureChangeAction, fadeInAction])
+
+            player.run(fadeSequence)
+            
         }
         
     }
@@ -552,6 +628,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let heartSequence = SKAction.sequence([bounceHeartSlot, moveHeartSlotDown, deleteHeartSlot])
         
         if currentGameState == gameState.inGame { addHeartSlot.run(heartSequence)}
+        
+    }
+    
+    func spawnShield(spawnPosition: CGPoint) {
+        
+        let shield = SKSpriteNode(imageNamed: "shield")
+        shield.name = "Shield"
+        shield.setScale(0.7)
+        shield.position = spawnPosition
+        shield.zPosition = 4
+        
+//        let shieldTexture = SKTexture(imageNamed: "shield") // Create the physics body using the texture for accurate hitbox
+//        shield.physicsBody = SKPhysicsBody(texture: shieldTexture, size: shield.size)
+        
+        shield.physicsBody = SKPhysicsBody(rectangleOf: shield.size)
+        shield.physicsBody!.affectedByGravity = false
+        shield.physicsBody!.categoryBitMask = PhysicsCategories.Shield
+        shield.physicsBody!.collisionBitMask = PhysicsCategories.None
+        shield.physicsBody!.contactTestBitMask = PhysicsCategories.Player
+        self.addChild(shield)
+        
+        var bounceShieldX: CGFloat
+        if shield.position.x < self.size.width / 2 {
+            bounceShieldX = shield.position.x + 30
+        } else {
+            bounceShieldX = shield.position.x - 30
+        }
+        let bounceShield = SKAction.move(to: CGPoint(x: bounceShieldX, y: shield.position.y + 50), duration: 0.15)
+        bounceShield.timingMode = .easeOut
+        let moveShieldDown = SKAction.moveTo(y: 0 - self.size.height * 0.2, duration: (self.size.height * 0.4 + (spawnPosition.y - self.size.height * 0.2)) / 1100)
+        let deleteShield = SKAction.removeFromParent()
+        let shieldSequence = SKAction.sequence([bounceShield, moveShieldDown, deleteShield])
+        
+        if currentGameState == gameState.inGame { shield.run(shieldSequence)}
         
     }
     
