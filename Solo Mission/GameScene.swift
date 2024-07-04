@@ -14,10 +14,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     let scoreLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
+    let bulletCountLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
     
     var levelNumber = 0
     var hitpoints = 3
     var maxHitpoints = 3
+    var bulletCount = 8
     var heartSlotNodes: [SKSpriteNode] = []
     var heartNodes: [SKSpriteNode] = []
     var shielded = false
@@ -25,7 +27,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let player = SKSpriteNode(imageNamed: "playerShip")
     let bulletSound = SKAction.playSoundFileNamed("laserBulletSoundEffect", waitForCompletion: false)
     let explosionSound = SKAction.playSoundFileNamed("explosionSoundEffect", waitForCompletion: false)
-    var bulletSparkSound = SKAction.playSoundFileNamed("bulletSparkSoundEffect", waitForCompletion: false)
+    let bulletSparkSound = SKAction.playSoundFileNamed("bulletSparkSoundEffect", waitForCompletion: false)
+    let hitpointGainSound = SKAction.playSoundFileNamed("healthGainSoundEffect", waitForCompletion: false)
+    let shieldOnSound = SKAction.playSoundFileNamed("shieldPowerUp", waitForCompletion: false)
+    let shieldOffSound = SKAction.playSoundFileNamed("shieldPowerDown", waitForCompletion: false)
         
     let tapToStartLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
 
@@ -77,7 +82,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             self.addChild(heartSlot)
         }
     
-        // make first 2 hearts invisible, fade them in as player gains heart slots
+        // make first 2 heart slots invisible, fade them in as player gains heart slots
         heartSlotNodes[0].alpha = 0
         heartSlotNodes[1].alpha = 0
 
@@ -152,7 +157,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.position = CGPoint(x: self.size.width * 0.22, y: self.size.height + scoreLabel.frame.size.height)
         scoreLabel.zPosition = 99
         self.addChild(scoreLabel)
-    
+        
+        bulletCountLabel.text = "x \(bulletCount)"
+        bulletCountLabel.fontSize = 80
+        bulletCountLabel.fontColor = SKColor.white
+        bulletCountLabel.horizontalAlignmentMode = SKLabelHorizontalAlignmentMode.right
+        bulletCountLabel.position = CGPoint(x: self.size.width * 0.76, y: bulletCountLabel.frame.size.height * 2.5)
+        bulletCountLabel.zPosition = 99
+        self.addChild(bulletCountLabel)
+        
+        let bulletCountLabelImage = SKSpriteNode(imageNamed: "bullet")
+        bulletCountLabelImage.setScale(0.9)
+        bulletCountLabelImage.zPosition = 99
+        bulletCountLabelImage.position = CGPoint(x: self.size.width * 0.635, y: bulletCountLabel.frame.size.height * 2.5 + 25)
+        self.addChild(bulletCountLabelImage)
+        
         createHearts()
         
         let moveOntoScreen = SKAction.moveTo(y: self.size.height * 0.9, duration: 0.3)
@@ -287,8 +306,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Create a fade-in action
             let fadeIn = SKAction.fadeIn(withDuration: 1.2)
             
+            // Create a sequence to include the sound effect
+            let gainHitpointSequence = SKAction.sequence([hitpointGainSound, fadeIn])
+            
             // Run the fade-in action on the heart
-            heart.run(fadeIn)
+            heart.run(gainHitpointSequence)
         }
     }
     
@@ -400,7 +422,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                         self.player.setScale(1.0)
                     }
 
-                    let fadeSequence = SKAction.sequence([fadeOutAction, fadeInAction, textureChangeAction, fadeOutAction, fadeInAction])
+                    let fadeSequence = SKAction.sequence([shieldOffSound, fadeOutAction, fadeInAction, textureChangeAction, fadeOutAction, fadeInAction])
 
                     player.run(fadeSequence)
                     
@@ -415,28 +437,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             addScore()
             
+            if levelNumber >= 0 && levelNumber < 2 {
+                bulletCount += 3
+            } else if levelNumber >= 2 && levelNumber < 4 {
+                bulletCount += 2
+            } else {
+                bulletCount += 1
+            }
+            
+            if bulletCount > 0 && bulletCount < 4 {
+                bulletCountLabel.fontColor = SKColor.red
+            } else if bulletCount > 3 && bulletCount < 6{
+                bulletCountLabel.fontColor = SKColor.systemYellow
+            } else if bulletCount > 5 {
+                bulletCountLabel.fontColor = SKColor.white
+            }
+            bulletCountLabel.text = "x \(bulletCount)"
+            
             let randNumHeart = random(min: 1.0, max: 4.0)
             let randNumHeartSlot = random(min: 1.0, max: 7.0)
             let randNumShield = random(min:1.0, max: 16.0)
             
             if body2.node != nil {
+                var doubleDrop = false
                 // if the player rolls below a 2 on the random number generator(1/3 chance) , spawn a heart to restore health
                 if randNumHeart < 2.0 && hitpoints != maxHitpoints {
                     spawnHeart(spawnPosition: body2.node!.position)
+                    doubleDrop = true
                 }
                 
                 // if the score is appropriate, give players a chance(1/6) at obtaining extra heart slots for more max hp, capped at 5.
                 if randNumHeartSlot < 2.0  && maxHitpoints == 3 && gameScore > 10 {
                     spawnHeartSlot(spawnPosition: body2.node!.position)
+                    doubleDrop = true
                 }
                 
                 if randNumHeartSlot < 2.0 && maxHitpoints == 4 && gameScore > 25 {
                     spawnHeartSlot(spawnPosition: body2.node!.position)
+                    doubleDrop = true
                 }
                 
                 // if the player isn't shielded, each enemy has a 1/15 chance of dropping a shield
-                if /*randNumShield < 2.0 && */ shielded == false {
-                    spawnShield(spawnPosition: body2.node!.position)
+                if randNumShield < 2.0 && shielded == false {
+                    spawnShield(spawnPosition: body2.node!.position, DB: doubleDrop)
                 }
             }
             
@@ -528,7 +571,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 self.player.physicsBody = customPhysicsBody
             }
 
-            let fadeSequence = SKAction.sequence([fadeOutAction, textureChangeAction, fadeInAction])
+            let fadeSequence = SKAction.sequence([shieldOnSound, fadeOutAction, textureChangeAction, fadeInAction])
 
             player.run(fadeSequence)
             
@@ -601,6 +644,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
+    // Push the shield drop further if a double drops(shield and heart) happens
     func spawnHeartSlot(spawnPosition: CGPoint) {
         
         let addHeartSlot = SKSpriteNode(imageNamed: "heartSlotAdd")
@@ -631,16 +675,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     
-    func spawnShield(spawnPosition: CGPoint) {
+    func spawnShield(spawnPosition: CGPoint, DB: Bool) {
         
         let shield = SKSpriteNode(imageNamed: "shield")
         shield.name = "Shield"
         shield.setScale(0.7)
         shield.position = spawnPosition
         shield.zPosition = 4
-        
-//        let shieldTexture = SKTexture(imageNamed: "shield") // Create the physics body using the texture for accurate hitbox
-//        shield.physicsBody = SKPhysicsBody(texture: shieldTexture, size: shield.size)
         
         shield.physicsBody = SKPhysicsBody(rectangleOf: shield.size)
         shield.physicsBody!.affectedByGravity = false
@@ -651,9 +692,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         var bounceShieldX: CGFloat
         if shield.position.x < self.size.width / 2 {
-            bounceShieldX = shield.position.x + 30
+            if DB == false {
+                bounceShieldX = shield.position.x + 30
+            } else {
+                bounceShieldX = shield.position.x + 30 + shield.size.width
+            }
         } else {
-            bounceShieldX = shield.position.x - 30
+            if DB == false {
+                bounceShieldX = shield.position.x - 30
+            } else {
+                bounceShieldX = shield.position.x - 30 - shield.size.width
+            }
         }
         let bounceShield = SKAction.move(to: CGPoint(x: bounceShieldX, y: shield.position.y + 50), duration: 0.15)
         bounceShield.timingMode = .easeOut
@@ -661,7 +710,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let deleteShield = SKAction.removeFromParent()
         let shieldSequence = SKAction.sequence([bounceShield, moveShieldDown, deleteShield])
         
-        if currentGameState == gameState.inGame { shield.run(shieldSequence)}
+        if currentGameState == gameState.inGame { shield.run(shieldSequence) }
         
     }
     
@@ -693,25 +742,62 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.run(spawnForever, withKey: "spawningEnemies")
     }
     
+    func showNoBulletsMessage() {
+        
+        let noBulletsLabel = SKLabelNode(fontNamed: "Futura-MediumItalic")
+        noBulletsLabel.text = "No Bullets :("
+        noBulletsLabel.fontSize = 100
+        noBulletsLabel.fontColor = SKColor.white
+        
+        // Position the label in the top half of the screen
+        noBulletsLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height * 0.75)
+        noBulletsLabel.zPosition = 99
+        
+        self.addChild(noBulletsLabel)
+        
+        // Create the fade-in action
+        let fadeInAction = SKAction.fadeOut(withDuration: 0.8)
+        
+        // Run the fade-in action
+        noBulletsLabel.run(fadeInAction)
+    }
+    
     
     func fireBullet() {
         
-        let bullet = SKSpriteNode(imageNamed: "bullet")
-        bullet.name = "Bullet"
-        bullet.setScale(1)
-        bullet.position = player.position
-        bullet.zPosition = 1
-        bullet.physicsBody = SKPhysicsBody(rectangleOf: bullet.size)
-        bullet.physicsBody!.affectedByGravity = false
-        bullet.physicsBody!.categoryBitMask = PhysicsCategories.Bullet
-        bullet.physicsBody!.collisionBitMask = PhysicsCategories.None
-        bullet.physicsBody!.contactTestBitMask = PhysicsCategories.Enemy
-        self.addChild(bullet)
-        
-        let moveBullet = SKAction.moveTo(y: self.size.height + bullet.size.height, duration: 1)
-        let deleteBullet = SKAction.removeFromParent()
-        let bulletSequence = SKAction.sequence([bulletSound, moveBullet, deleteBullet])
-        bullet.run(bulletSequence)
+        if bulletCount > 0 {
+            let bullet = SKSpriteNode(imageNamed: "bullet")
+            bullet.name = "Bullet"
+            bullet.setScale(1)
+            bullet.position = player.position
+            bullet.zPosition = 1
+            bullet.physicsBody = SKPhysicsBody(rectangleOf: bullet.size)
+            bullet.physicsBody!.affectedByGravity = false
+            bullet.physicsBody!.categoryBitMask = PhysicsCategories.Bullet
+            bullet.physicsBody!.collisionBitMask = PhysicsCategories.None
+            bullet.physicsBody!.contactTestBitMask = PhysicsCategories.Enemy
+            self.addChild(bullet)
+            
+            let moveBullet = SKAction.moveTo(y: self.size.height + bullet.size.height, duration: 1)
+            let deleteBullet = SKAction.removeFromParent()
+            let bulletSequence = SKAction.sequence([bulletSound, moveBullet, deleteBullet])
+            bullet.run(bulletSequence)
+            
+            bulletCount -= 1
+            bulletCountLabel.text = "x \(bulletCount)"
+            
+            //Update the color of the bullet label to reflect depleting bullets
+            if bulletCount > 0 && bulletCount < 4 {
+                bulletCountLabel.fontColor = SKColor.red
+            } else if bulletCount > 3 && bulletCount < 6 {
+                bulletCountLabel.fontColor = SKColor.systemYellow
+            } else if bulletCount > 5 {
+                bulletCountLabel.fontColor = SKColor.white
+            }
+            
+        } else {
+            showNoBulletsMessage()
+        }
         
     }
     

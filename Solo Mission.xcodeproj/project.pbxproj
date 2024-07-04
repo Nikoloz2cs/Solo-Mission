@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		131250242C336E9600D7D9C8 /* shieldPowerDown.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 131250232C336E9600D7D9C8 /* shieldPowerDown.mp3 */; };
+		131250262C33719300D7D9C8 /* healthGainSoundEffect.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 131250252C33719300D7D9C8 /* healthGainSoundEffect.mp3 */; };
+		131250282C36BDD200D7D9C8 /* shieldPowerUp.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 131250272C36BDD100D7D9C8 /* shieldPowerUp.mp3 */; };
 		132A1F872BF2DFE1003897A0 /* explosionSoundEffect.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 132A1F862BF2DFE1003897A0 /* explosionSoundEffect.mp3 */; };
 		132A1F8D2BF6639A003897A0 /* GameOverScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A1F8C2BF6639A003897A0 /* GameOverScene.swift */; };
 		132A1F902BF68A87003897A0 /* MainMenuScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132A1F8F2BF68A87003897A0 /* MainMenuScene.swift */; };
@@ -44,6 +47,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		131250232C336E9600D7D9C8 /* shieldPowerDown.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = shieldPowerDown.mp3; sourceTree = "<group>"; };
+		131250252C33719300D7D9C8 /* healthGainSoundEffect.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = healthGainSoundEffect.mp3; sourceTree = "<group>"; };
+		131250272C36BDD100D7D9C8 /* shieldPowerUp.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = shieldPowerUp.mp3; path = "../../Game Dev Items/shieldPowerUp.mp3"; sourceTree = "<group>"; };
 		132A1F862BF2DFE1003897A0 /* explosionSoundEffect.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = explosionSoundEffect.mp3; sourceTree = "<group>"; };
 		132A1F8A2BF651C0003897A0 /* Solo-Mission-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Solo-Mission-Info.plist"; sourceTree = SOURCE_ROOT; };
 		132A1F8C2BF6639A003897A0 /* GameOverScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameOverScene.swift; sourceTree = "<group>"; };
@@ -126,7 +132,10 @@
 				13F600B02BF2B5AD00DFD7D3 /* GameViewController.swift */,
 				132A1F912BF6915F003897A0 /* the-art-of-synths(space song3).mp3 */,
 				136D590E2BFCF30C00986482 /* bulletSparkSoundEffect.mp3 */,
+				131250232C336E9600D7D9C8 /* shieldPowerDown.mp3 */,
+				131250272C36BDD100D7D9C8 /* shieldPowerUp.mp3 */,
 				13F600DE2BF2C8C600DFD7D3 /* laserBulletSoundEffect.mp3 */,
+				131250252C33719300D7D9C8 /* healthGainSoundEffect.mp3 */,
 				132A1F862BF2DFE1003897A0 /* explosionSoundEffect.mp3 */,
 				132A1F8E2BF686EB003897A0 /* theBoldFont.ttf */,
 				13F600B22BF2B5AD00DFD7D3 /* Main.storyboard */,
@@ -257,10 +266,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				131250242C336E9600D7D9C8 /* shieldPowerDown.mp3 in Resources */,
 				13F600AB2BF2B5AD00DFD7D3 /* GameScene.sks in Resources */,
 				13F600DF2BF2C8C600DFD7D3 /* laserBulletSoundEffect.mp3 in Resources */,
 				13F600B42BF2B5AD00DFD7D3 /* Base in Resources */,
 				13F600B62BF2B5AF00DFD7D3 /* Assets.xcassets in Resources */,
+				131250262C33719300D7D9C8 /* healthGainSoundEffect.mp3 in Resources */,
+				131250282C36BDD200D7D9C8 /* shieldPowerUp.mp3 in Resources */,
 				132A1F922BF6915F003897A0 /* the-art-of-synths(space song3).mp3 in Resources */,
 				13F600AD2BF2B5AD00DFD7D3 /* Actions.sks in Resources */,
 				136D590F2BFCF30C00986482 /* bulletSparkSoundEffect.mp3 in Resources */,
