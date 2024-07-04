@@ -28,7 +28,7 @@
   <tr>
     <td>
       <a href="https://github.com/Nikoloz2cs/Solo-Mission/raw/main/Solo_Mission_Gameplay.mov">
-        <img src="Solo_Mission_Tameplay_Thumbnail.PNG" alt="Watch the video" width="200"/>
+        <img src="Solo_Mission_GameplayThumbnail.PNG" alt="Watch the video" width="200"/>
       </a>
     </td>
     <td>
